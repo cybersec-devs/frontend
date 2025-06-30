@@ -51,6 +51,10 @@
   //PROD
   const apiBaseUrl = 'https://hospital-backend-yeq5.onrender.com/';
 
+  function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+  }
+  
   async function carregarMedicos() {
     const response = await fetch(`${apiBaseUrl}/medicos`);
     if (!response.ok) throw new Error('Erro ao carregar médicos');
@@ -210,6 +214,7 @@ async function excluirPaciente(id) {
           alert('Paciente adicionado com sucesso!');
         }
         limparFormulario();
+        await delay(4000);
         await carregarPacientesETabela(); //atualiza tabela automaticamente
       } catch (error) {
         console.warn(error.message);
