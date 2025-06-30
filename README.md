@@ -43,7 +43,7 @@ Todo o sistema utiliza **HTML, JavaScript puro (Vanilla JS)** e **Bootstrap 5** 
 
 ## ✅ Diagrama de Classes
 
-![Diagrama UML](Classe%20UML.png)
+![Diagrama UML](../backend/Classe%20UML.png)
 
 **Relacionamentos:**
 
@@ -58,17 +58,6 @@ Todo o sistema utiliza **HTML, JavaScript puro (Vanilla JS)** e **Bootstrap 5** 
 - Cadastro com validação
 - Atualização e exclusão de dados com confirmação
 - Integração via API RESTful com backend Flask
-
----
-
-## 📁 Estrutura de Arquivos
-frontend/
-│
-├── index.html # Página principal (menu de acesso)
-├── medicos/ # Página CRUD de médicos
-├── pacientes/ # Página CRUD de pacientes
-├── consultas/ # Página CRUD de consultas
-└── README.md # Este arquivo
 
 ---
 
