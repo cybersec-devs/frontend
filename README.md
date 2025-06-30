@@ -43,7 +43,7 @@ Todo o sistema utiliza **HTML, JavaScript puro (Vanilla JS)** e **Bootstrap 5** 
 
 ## ✅ Diagrama de Classes
 
-![Diagrama UML](../backend/Classe%20UML.png)
+![Diagrama UML](https://raw.githubusercontent.com/cybersec-devs/backend/refs/heads/main/Classe%20UML.png)
 
 **Relacionamentos:**
 
