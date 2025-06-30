@@ -1,4 +1,11 @@
-# 💻 Frontend - Sistema Hospitalar
+# 💻 Sistema de Hospital - FRONTEND - Projeto Prático
+
+Atenção: 
+Aplicação Backend está disponível em: <https://hospital-backend-yeq5.onrender.com/>
+Aplicação FrontEnd está disponível em: <https://cybersec-devs.github.io/frontend/>
+
+Caso queira executar na sua própria máquina, siga as orientações deste documento.
+  
 
 Este é o frontend desenvolvido para o sistema hospitalar. Ele permite realizar operações de **CRUD** (Criar, Ler, Atualizar e Deletar) para três entidades:
 
@@ -37,7 +44,11 @@ frontend/
 Todas as páginas usam uma constante chamada `apiBaseUrl` para se comunicar com o backend:
 
 ```js
-const apiBaseUrl = 'http://127.0.0.1:5000';
+const apiBaseUrl = 'http://127.0.0.1:5000'; 
+ou
+
+const apiBaseUrl = 'https://hospital-backend-yeq5.onrender.com';
+
 
 
 📌 Alterando a URL

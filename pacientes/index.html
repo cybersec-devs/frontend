@@ -46,7 +46,10 @@
 </div>
 
 <script>
-  const apiBaseUrl = 'http://127.0.0.1:5000';
+  //LOCAL
+  //const apiBaseUrl = 'http://127.0.0.1:5000';
+  //PROD
+  const apiBaseUrl = 'https://hospital-backend-yeq5.onrender.com/';
 
   async function carregarMedicos() {
     const response = await fetch(`${apiBaseUrl}/medicos`);
