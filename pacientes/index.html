@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pacientes - CRUD</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body>
+<div class="container mt-5">
+  <h1 class="mb-4">Pacientes</h1>
+
+  <form id="formPaciente" class="mb-4">
+    <input type="hidden" id="pacienteId" value="" />
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label for="nome" class="form-label">Nome do Paciente</label>
+        <input type="text" id="nome" name="nome" class="form-control" required />
+      </div>
+      <div class="col-md-6">
+        <label for="medico_id" class="form-label">Médico Responsável</label>
+        <select id="medico_id" name="medico_id" class="form-select" required>
+          <option value="" disabled selected>Selecione um médico</option>
+        </select>
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary mt-3" id="btnSalvar">Adicionar Paciente</button>
+    <button type="button" class="btn btn-secondary mt-3 d-none" id="btnCancelar">Cancelar</button>
+  </form>
+
+  <table class="table table-striped table-hover">
+    <thead class="table-dark">
+      <tr>
+        <th>ID</th>
+        <th>Nome</th>
+        <th>Médico</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody id="pacientesBody">
+      <!-- Linhas via JS -->
+    </tbody>
+  </table>
+
+  <div id="pacientesEmpty" class="alert alert-info d-none">Nenhum paciente cadastrado.</div>
+</div>
+
+<script>
+  const apiBaseUrl = 'http://127.0.0.1:5000';
+
+  async function carregarMedicos() {
+    const response = await fetch(`${apiBaseUrl}/medicos`);
+    if (!response.ok) throw new Error('Erro ao carregar médicos');
+    return response.json();
+  }
+
+  async function carregarPacientes() {
+    const response = await fetch(`${apiBaseUrl}/pacientes`);
+    if (!response.ok) throw new Error('Erro ao carregar pacientes');
+    return response.json();
+  }
+
+  async function preencherSelectMedicos() {
+    const medicos = await carregarMedicos();
+    const select = document.getElementById('medico_id');
+    select.innerHTML = '<option value="" disabled selected>Selecione um médico</option>';
+    medicos.forEach(medico => {
+      const option = document.createElement('option');
+      option.value = medico.id;
+      option.textContent = `${medico.nome} (${medico.crm})`;
+      select.appendChild(option);
+    });
+  }
+
+  function preencherTabelaPacientes(pacientes) {
+    const tbody = document.getElementById('pacientesBody');
+    const emptyMessage = document.getElementById('pacientesEmpty');
+    tbody.innerHTML = '';
+
+    if (pacientes.length === 0) {
+      emptyMessage.classList.remove('d-none');
+      return;
+    }
+    emptyMessage.classList.add('d-none');
+
+    pacientes.forEach(paciente => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${paciente.id}</td>
+        <td>${paciente.nome}</td>
+        <td>${paciente.medico ? paciente.medico.nome : '—'}</td>
+        <td>
+          <button class="btn btn-sm btn-warning me-2 btn-editar" data-id="${paciente.id}">Editar</button>
+          <button class="btn btn-sm btn-danger btn-excluir" data-id="${paciente.id}">Excluir</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  async function carregarPacientesETabela() {
+    const pacientes = await carregarPacientes();
+    preencherTabelaPacientes(pacientes);
+  }
+
+  async function buscarPacientePorId(id) {
+    const response = await fetch(`${apiBaseUrl}/pacientes/${id}`);
+    if (!response.ok) throw new Error('Paciente não encontrado');
+    return response.json();
+  }
+
+async function criarPaciente(nome, medico_id) {
+  const res = await fetch(`${apiBaseUrl}/pacientes`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ nome, medico_id: Number(medico_id) })
+  });
+
+  if (!res.ok) {
+    let msg = 'Falha ao criar paciente';
+    try {
+      const err = await res.json();
+      msg = err.error || msg;
+    } catch {
+      // erro ao parsear json, mantém msg padrão
+    }
+    throw new Error(msg);
+  }
+
+  return res.json();
+}
+
+async function atualizarPaciente(id, nome, medico_id) {
+  const res = await fetch(`${apiBaseUrl}/pacientes/${id}`, {
+    method: 'PUT',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ nome, medico_id: Number(medico_id) })
+  });
+
+  if (!res.ok) {
+    let msg = 'Falha ao atualizar paciente';
+    try {
+      const err = await res.json();
+      msg = err.error || msg;
+    } catch {
+      // erro ao parsear json, mantém msg padrão
+    }
+    throw new Error(msg);
+  }
+
+  return res.json();
+}
+
+async function excluirPaciente(id) {
+  const res = await fetch(`${apiBaseUrl}/pacientes/${id}`, {
+    method: 'DELETE'
+  });
+
+  if (!res.ok) {
+    let msg = 'Falha ao excluir paciente';
+    try {
+      const err = await res.json();
+      msg = err.error || msg;
+    } catch {
+      // erro ao parsear json, mantém msg padrão
+    }
+    throw new Error(msg);
+  }
+  
+  // Alguns backends retornam 204 No Content, então aqui não retornamos JSON
+  return;
+}
+
+  function limparFormulario() {
+    document.getElementById('pacienteId').value = '';
+    document.getElementById('nome').value = '';
+    document.getElementById('medico_id').value = '';
+    document.getElementById('btnSalvar').textContent = 'Adicionar Paciente';
+    document.getElementById('btnCancelar').classList.add('d-none');
+  }
+
+  async function init() {
+    await preencherSelectMedicos();
+    await carregarPacientesETabela();
+
+    const form = document.getElementById('formPaciente');
+    const btnCancelar = document.getElementById('btnCancelar');
+
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const pacienteId = document.getElementById('pacienteId').value;
+      const nome = document.getElementById('nome').value.trim();
+      const medico_id = document.getElementById('medico_id').value;
+
+      if (!nome || !medico_id) {
+        alert('Preencha todos os campos.');
+        return;
+      }
+
+      try {
+        if (pacienteId) {
+          // Atualizar paciente
+          await atualizarPaciente(pacienteId, nome, medico_id);
+          alert('Paciente atualizado com sucesso!');
+        } else {
+          // Criar paciente
+          await criarPaciente(nome, medico_id);
+          alert('Paciente adicionado com sucesso!');
+        }
+        limparFormulario();
+        await carregarPacientesETabela();
+      } catch (error) {
+        console.warn(error.message);
+      }
+    });
+
+    btnCancelar.addEventListener('click', () => {
+      limparFormulario();
+    });
+
+    // Delegação de eventos para editar e excluir
+    document.getElementById('pacientesBody').addEventListener('click', async e => {
+      if (e.target.classList.contains('btn-editar')) {
+        const id = e.target.getAttribute('data-id');
+        try {
+          const paciente = await buscarPacientePorId(id);
+          document.getElementById('pacienteId').value = paciente.id;
+          document.getElementById('nome').value = paciente.nome;
+          document.getElementById('medico_id').value = paciente.medico_id;
+          document.getElementById('btnSalvar').textContent = 'Atualizar Paciente';
+          document.getElementById('btnCancelar').classList.remove('d-none');
+        } catch (error) {
+          console.warn(error.message);
+        }
+      }
+      else if (e.target.classList.contains('btn-excluir')) {
+        const id = e.target.getAttribute('data-id');
+        if (confirm('Tem certeza que deseja excluir este paciente?')) {
+          try {
+            await excluirPaciente(id);
+            alert('Paciente excluído com sucesso!');
+            await carregarPacientesETabela();
+          } catch (error) {
+            console.warn(error.message);
+          }
+        }
+      }
+    });
+  }
+
+  window.onload = init;
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

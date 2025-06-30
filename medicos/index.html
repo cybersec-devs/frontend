@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Gerenciamento de Médicos</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body>
+<div class="container mt-4">
+    <h1>Médicos</h1>
+    <div id="mensagem"></div>
+
+    <button class="btn btn-primary mb-3" onclick="mostrarFormAdicionar()">Adicionar Médico</button>
+
+    <!-- Formulário de adicionar / editar -->
+    <div id="form-medico" style="display:none;">
+        <h3 id="titulo-form">Adicionar Médico</h3>
+        <form id="formMedico" onsubmit="salvarMedico(event)">
+            <input type="hidden" id="medicoId" />
+            <div class="mb-3">
+                <label for="nome" class="form-label">Nome</label>
+                <input type="text" id="nome" class="form-control" required />
+            </div>
+            <div class="mb-3">
+                <label for="especialidade" class="form-label">Especialidade</label>
+                <input type="text" id="especialidade" class="form-control" required />
+            </div>
+            <div class="mb-3">
+                <label for="crm" class="form-label">CRM</label>
+                <input type="text" id="crm" class="form-control" required />
+            </div>
+            <button type="submit" class="btn btn-success">Salvar</button>
+            <button type="button" class="btn btn-secondary" onclick="fecharForm()">Cancelar</button>
+        </form>
+    </div>
+
+    <!-- Tabela de médicos -->
+    <table class="table table-striped" id="tabelaMedicos">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>Especialidade</th>
+                <th>CRM</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    <div id="medicosEmpty" class="alert alert-info d-none">Nenhum médico cadastrado.</div>
+
+</div>
+
+<script>
+const apiBaseUrl = 'http://127.0.0.1:5000/medicos'; // ajuste para sua API
+
+async function carregarMedicos() {
+    const resposta = await fetch(apiBaseUrl);
+    if (!resposta.ok) {
+        mostrarMensagem('Erro ao carregar médicos.', 'danger');
+        return;
+    }
+    const medicos = await resposta.json();
+    const emptyMessage = document.getElementById('medicosEmpty');
+
+    const tbody = document.querySelector('#tabelaMedicos tbody');
+    tbody.innerHTML = '';
+    if (medicos.length === 0) {
+      emptyMessage.classList.remove('d-none');
+      return;
+    }
+    emptyMessage.classList.add('d-none');
+
+    medicos.forEach(medico => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${medico.id}</td>
+            <td>${medico.nome}</td>
+            <td>${medico.especialidade}</td>
+            <td>${medico.crm}</td>
+            <td>
+                <button class="btn btn-sm btn-primary" onclick="editarMedico(${medico.id})">Editar</button>
+                <button class="btn btn-sm btn-danger" onclick="excluirMedico(${medico.id})">Excluir</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function mostrarMensagem(texto, tipo='success') {
+    const div = document.getElementById('mensagem');
+    div.innerHTML = `<div class="alert alert-${tipo}">${texto}</div>`;
+    setTimeout(() => div.innerHTML = '', 3000);
+}
+
+function mostrarFormAdicionar() {
+    document.getElementById('titulo-form').innerText = 'Adicionar Médico';
+    document.getElementById('formMedico').reset();
+    document.getElementById('medicoId').value = '';
+    document.getElementById('form-medico').style.display = 'block';
+}
+
+function fecharForm() {
+    document.getElementById('form-medico').style.display = 'none';
+}
+
+async function salvarMedico(event) {
+    event.preventDefault();
+    const id = document.getElementById('medicoId').value;
+    const nome = document.getElementById('nome').value.trim();
+    const especialidade = document.getElementById('especialidade').value.trim();
+    const crm = document.getElementById('crm').value.trim();
+
+    const metodo = id ? 'PUT' : 'POST';
+    const url = id ? `${apiBaseUrl}/${id}` : apiBaseUrl;
+
+    const response = await fetch(url, {
+        method: metodo,
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({nome, especialidade, crm})
+    });
+
+    if (response.ok) {
+        mostrarMensagem('Médico salvo com sucesso!');
+        fecharForm();
+        carregarMedicos();
+    } else {
+        const erro = await response.json();
+        mostrarMensagem(erro.error || 'Erro ao salvar médico', 'danger');
+    }
+}
+
+async function editarMedico(id) {
+    const response = await fetch(`${apiBaseUrl}/${id}`);
+    if (!response.ok) {
+        mostrarMensagem('Médico não encontrado.', 'danger');
+        return;
+    }
+    const medico = await response.json();
+    document.getElementById('medicoId').value = medico.id;
+    document.getElementById('nome').value = medico.nome;
+    document.getElementById('especialidade').value = medico.especialidade;
+    document.getElementById('crm').value = medico.crm;
+    document.getElementById('titulo-form').innerText = 'Editar Médico';
+    document.getElementById('form-medico').style.display = 'block';
+}
+
+async function excluirMedico(id) {
+    if (!confirm('Confirma exclusão do médico?')) return;
+    const response = await fetch(`${apiBaseUrl}/${id}`, { method: 'DELETE' });
+    if (response.ok) {
+        mostrarMensagem('Médico excluído.');
+        carregarMedicos();
+    } else {
+        mostrarMensagem('Erro ao excluir médico.', 'danger');
+    }
+}
+
+// Carrega a lista ao abrir a página
+carregarMedicos();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

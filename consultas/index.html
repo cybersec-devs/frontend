@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Consultas - CRUD</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body>
+<div class="container mt-5">
+  <h1 class="mb-4">Consultas</h1>
+
+  <form id="formConsulta" class="mb-4">
+    <input type="hidden" id="consultaId" value="" />
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label for="data" class="form-label">Data</label>
+        <input type="date" id="data" name="data" class="form-control" required />
+      </div>
+      <div class="col-md-3">
+        <label for="horario" class="form-label">Horário</label>
+        <input type="time" id="horario" name="horario" class="form-control" required />
+      </div>
+      <div class="col-md-4">
+        <label for="descricao" class="form-label">Descrição</label>
+        <input type="text" id="descricao" name="descricao" class="form-control" />
+      </div>
+      <div class="col-md-2">
+        <label for="paciente_id" class="form-label">Paciente</label>
+        <select id="paciente_id" name="paciente_id" class="form-select" required>
+          <option value="" disabled selected>Selecione um paciente</option>
+        </select>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-3" id="btnSalvar">Adicionar Consulta</button>
+    <button type="button" class="btn btn-secondary mt-3 d-none" id="btnCancelar">Cancelar</button>
+  </form>
+
+  <table class="table table-striped table-hover">
+    <thead class="table-dark">
+      <tr>
+        <th>ID</th>
+        <th>Data</th>
+        <th>Horário</th>
+        <th>Descrição</th>
+        <th>Paciente</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody id="consultasBody">
+      <!-- Linhas via JS -->
+    </tbody>
+  </table>
+
+  <div id="consultasEmpty" class="alert alert-info d-none">Nenhuma consulta cadastrada.</div>
+</div>
+
+<script>
+  const apiBaseUrl = 'http://127.0.0.1:5000';
+
+  // Carrega lista de pacientes para o select
+  async function carregarPacientes() {
+    const res = await fetch(`${apiBaseUrl}/pacientes`);
+    if (!res.ok) throw new Error('Erro ao carregar pacientes');
+    return res.json();
+  }
+
+  // Carrega todas as consultas
+  async function carregarConsultas() {
+    const res = await fetch(`${apiBaseUrl}/consultas`);
+    if (!res.ok) throw new Error('Erro ao carregar consultas');
+    return res.json();
+  }
+
+  // Preenche select pacientes
+  async function preencherSelectPacientes() {
+    const pacientes = await carregarPacientes();
+    const select = document.getElementById('paciente_id');
+    select.innerHTML = '<option value="" disabled selected>Selecione um paciente</option>';
+    pacientes.forEach(p => {
+      const option = document.createElement('option');
+      option.value = p.id;
+      option.textContent = p.nome;
+      select.appendChild(option);
+    });
+  }
+
+  // Preenche tabela consultas
+  function preencherTabelaConsultas(consultas) {
+    const tbody = document.getElementById('consultasBody');
+    const emptyMessage = document.getElementById('consultasEmpty');
+    tbody.innerHTML = '';
+
+    if (consultas.length === 0) {
+      emptyMessage.classList.remove('d-none');
+      return;
+    }
+    emptyMessage.classList.add('d-none');
+
+    consultas.forEach(c => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${c.id}</td>
+        <td>${c.data}</td>
+        <td>${c.horario}</td>
+        <td>${c.descricao || ''}</td>
+        <td>${c.paciente ? c.paciente.nome : '—'}</td>
+        <td>
+          <button class="btn btn-sm btn-warning me-2 btn-editar" data-id="${c.id}">Editar</button>
+          <button class="btn btn-sm btn-danger btn-excluir" data-id="${c.id}">Excluir</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // Busca consulta por id
+  async function buscarConsultaPorId(id) {
+    const res = await fetch(`${apiBaseUrl}/consultas/${id}`);
+    if (!res.ok) throw new Error('Consulta não encontrada');
+    return res.json();
+  }
+
+  // Cria consulta
+  async function criarConsulta(data, horario, descricao, paciente_id) {
+    const res = await fetch(`${apiBaseUrl}/consultas`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ data, horario, descricao, paciente_id: Number(paciente_id) })
+    });
+
+    if (!res.ok) {
+      let msg = 'Falha ao criar consulta';
+      try {
+        const err = await res.json();
+        msg = err.error || msg;
+      } catch {}
+      throw new Error(msg);
+    }
+    return res.json();
+  }
+
+  // Atualiza consulta
+  async function atualizarConsulta(id, data, horario, descricao, paciente_id) {
+    const res = await fetch(`${apiBaseUrl}/consultas/${id}`, {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ data, horario, descricao, paciente_id: Number(paciente_id) })
+    });
+
+    if (!res.ok) {
+      let msg = 'Falha ao atualizar consulta';
+      try {
+        const err = await res.json();
+        msg = err.error || msg;
+      } catch {}
+      throw new Error(msg);
+    }
+    return res.json();
+  }
+
+  // Exclui consulta
+  async function excluirConsulta(id) {
+    const res = await fetch(`${apiBaseUrl}/consultas/${id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      let msg = 'Falha ao excluir consulta';
+      try {
+        const err = await res.json();
+        msg = err.error || msg;
+      } catch {}
+      throw new Error(msg);
+    }
+  }
+
+  // Limpa formulário
+  function limparFormulario() {
+    document.getElementById('consultaId').value = '';
+    document.getElementById('data').value = '';
+    document.getElementById('horario').value = '';
+    document.getElementById('descricao').value = '';
+    document.getElementById('paciente_id').value = '';
+    document.getElementById('btnSalvar').textContent = 'Adicionar Consulta';
+    document.getElementById('btnCancelar').classList.add('d-none');
+  }
+
+  // Inicializa a página
+  async function init() {
+    await preencherSelectPacientes();
+    const consultas = await carregarConsultas();
+    preencherTabelaConsultas(consultas);
+
+    const form = document.getElementById('formConsulta');
+    const btnCancelar = document.getElementById('btnCancelar');
+
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+
+      const id = document.getElementById('consultaId').value;
+      const data = String(document.getElementById('data').value);
+      const horario = String(document.getElementById('horario').value);
+      const descricao = document.getElementById('descricao').value.trim();
+      const paciente_id = document.getElementById('paciente_id').value;
+
+      if (!data || !horario || !paciente_id) {
+        alert('Preencha os campos obrigatórios (Data, Horário e Paciente)');
+        return;
+      }
+
+      try {
+        if (id) {
+        
+          await atualizarConsulta(id, data, horario, descricao, paciente_id);
+          alert('Consulta atualizada com sucesso!');
+        } else {
+          await criarConsulta(data, horario, descricao, paciente_id);
+          alert('Consulta adicionada com sucesso!');
+        }
+        limparFormulario();
+        const consultasAtualizadas = await carregarConsultas();
+        preencherTabelaConsultas(consultasAtualizadas);
+      } catch (err) {
+        console.warn(err.message);
+      }
+    });
+
+    btnCancelar.addEventListener('click', () => {
+      limparFormulario();
+    });
+
+    // Delegação de eventos para editar e excluir
+    document.getElementById('consultasBody').addEventListener('click', async e => {
+      if (e.target.classList.contains('btn-editar')) {
+        const id = e.target.getAttribute('data-id');
+        try {
+          const consulta = await buscarConsultaPorId(id);
+          document.getElementById('consultaId').value = consulta.id;
+          document.getElementById('data').value = consulta.data;
+          document.getElementById('horario').value = consulta.horario;
+          document.getElementById('descricao').value = consulta.descricao || '';
+          document.getElementById('paciente_id').value = consulta.paciente_id;
+          document.getElementById('btnSalvar').textContent = 'Atualizar Consulta';
+          document.getElementById('btnCancelar').classList.remove('d-none');
+        } catch (err) {
+          console.warn(err.message);
+        }
+      } else if (e.target.classList.contains('btn-excluir')) {
+        const id = e.target.getAttribute('data-id');
+        if (confirm('Tem certeza que deseja excluir esta consulta?')) {
+          try {
+            await excluirConsulta(id);
+            alert('Consulta excluída com sucesso!');
+            const consultasAtualizadas = await carregarConsultas();
+            preencherTabelaConsultas(consultasAtualizadas);
+          } catch (err) {
+            console.warn(err.message);
+          }
+        }
+      }
+    });
+  }
+
+  window.onload = init;
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
