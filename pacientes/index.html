@@ -129,7 +129,6 @@ async function criarPaciente(nome, medico_id) {
     }
     throw new Error(msg);
   }
-  carregarPacientes();
   return res.json();
 }
 
@@ -211,7 +210,7 @@ async function excluirPaciente(id) {
           alert('Paciente adicionado com sucesso!');
         }
         limparFormulario();
-        await carregarPacientesETabela();
+        await carregarPacientesETabela(); //atualiza tabela automaticamente
       } catch (error) {
         console.warn(error.message);
       }
